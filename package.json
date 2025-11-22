@@ -1,0 +1,14 @@
+{
+  "name": "react-tailwind-camera-pwa",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Fullscreen camera PWA built with React, Tailwind, and react-webcam",
+  "scripts": {
+    "serve": "node ./bin/ng.js serve",
+    "ng": "node ./bin/ng.js serve"
+  },
+  "bin": {
+    "ng": "./bin/ng.js"
+  }
+}
