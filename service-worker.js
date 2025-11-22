@@ -1,17 +1,8 @@
-const CACHE_NAME = 'camera-pwa-v1';
-const OFFLINE_ASSETS = [
-  '/',
-  '/index.html',
-  '/app.js',
-  '/manifest.webmanifest',
-  '/icons/icon-192.svg',
-  '/icons/icon-512.svg',
-];
+const CACHE_NAME = 'camera-pwa-v3';
+const OFFLINE_ASSETS = ['/','/index.html','/app.js','/manifest.webmanifest','/icons/icon-192.svg','/icons/icon-512.svg'];
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(OFFLINE_ASSETS)).then(() => self.skipWaiting())
-  );
+  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(OFFLINE_ASSETS)).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (event) => {
