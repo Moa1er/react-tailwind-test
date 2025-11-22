@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'https://esm.sh/react@18.3.1';
 import { createRoot } from 'https://esm.sh/react-dom@18.3.1/client';
-import Webcam from 'https://esm.sh/react-webcam@7.1.1';
 
 const e = React.createElement;
 
@@ -32,7 +31,9 @@ const OverlayButton = ({ label, onClick, variant = 'light' }) => {
 };
 
 function App() {
-  const webcamRef = useRef(null);
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const streamRef = useRef(null);
   const [facingMode, setFacingMode] = useState('environment');
   const [capturedImage, setCapturedImage] = useState(null);
   const [error, setError] = useState('');
@@ -45,20 +46,15 @@ function App() {
     [facingMode]
   );
 
-  const onUserMediaError = useCallback((err) => {
-    console.error('Camera error', err);
-    setError('Could not access the camera. Please allow permissions and reload.');
-    setIsReady(false);
-    setPermissionGranted(false);
+  const stopStream = useCallback(() => {
+    const current = streamRef.current;
+    if (current) {
+      current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
   }, []);
 
-  const onUserMedia = useCallback(() => {
-    setError('');
-    setPermissionGranted(true);
-    setIsReady(true);
-  }, []);
-
-  const requestCameraAccess = useCallback(async () => {
+  const startStream = useCallback(async () => {
     if (!navigator.mediaDevices?.getUserMedia) {
       setError('Camera access is not supported in this browser.');
       return;
@@ -66,39 +62,59 @@ function App() {
 
     setIsRequesting(true);
     setError('');
+
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode } });
-      stream.getTracks().forEach((track) => track.stop());
+      stopStream();
+      const stream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints });
+      streamRef.current = stream;
+
+      const video = videoRef.current;
+      if (video) {
+        video.srcObject = stream;
+        await video.play();
+      }
+
       setPermissionGranted(true);
       setIsReady(true);
     } catch (err) {
       console.error('Camera permission error', err);
       setPermissionGranted(false);
+      setIsReady(false);
       setError('Camera permission is required. Please allow access and try again.');
     } finally {
       setIsRequesting(false);
     }
-  }, [facingMode]);
+  }, [stopStream, videoConstraints]);
+
+  const requestCameraAccess = useCallback(async () => {
+    await startStream();
+  }, [startStream]);
 
   const capture = useCallback(() => {
-    const webcam = webcamRef.current;
-    if (!webcam || typeof webcam.getScreenshot !== 'function') return;
-    const shot = webcam.getScreenshot();
-    if (shot) {
-      setCapturedImage(shot);
-      if (webcam.video && !webcam.video.paused) {
-        webcam.video.pause();
-      }
-    }
+    const video = videoRef.current;
+    if (!video || !video.videoWidth || !video.videoHeight) return;
+
+    const canvas = canvasRef.current ?? (canvasRef.current = document.createElement('canvas'));
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const shot = canvas.toDataURL('image/png');
+    setCapturedImage(shot);
+    video.pause();
   }, []);
 
   const retake = useCallback(() => {
-    const webcam = webcamRef.current;
     setCapturedImage(null);
-    if (webcam && webcam.video) {
-      webcam.video.play().catch(() => {});
+    const video = videoRef.current;
+    if (video) {
+      video.play().catch(() => {});
+    } else if (permissionGranted) {
+      startStream();
     }
-  }, []);
+  }, [permissionGranted, startStream]);
 
   const saveImage = useCallback(() => {
     if (!capturedImage) return;
@@ -110,13 +126,22 @@ function App() {
 
   const toggleCamera = useCallback(() => {
     setFacingMode((mode) => (mode === 'user' ? 'environment' : 'user'));
+    setIsReady(false);
   }, []);
 
   useEffect(() => {
-    if (!capturedImage && webcamRef.current?.video?.paused) {
-      webcamRef.current.video.play().catch(() => {});
+    if (!capturedImage && videoRef.current?.paused && streamRef.current) {
+      videoRef.current.play().catch(() => {});
     }
   }, [capturedImage]);
+
+  useEffect(() => {
+    if (permissionGranted && !capturedImage) {
+      startStream();
+    }
+  }, [permissionGranted, capturedImage, startStream]);
+
+  useEffect(() => () => stopStream(), [stopStream]);
 
   return e(
     'div',
@@ -131,18 +156,12 @@ function App() {
               alt: 'Captured photograph',
               className: 'absolute inset-0 w-full h-full object-cover',
             })
-          : e(Webcam, {
-              ref: webcamRef,
-              audio: false,
-              screenshotFormat: 'image/png',
-              screenshotQuality: 1,
-              videoConstraints,
-              mirrored: facingMode === 'user',
-              onUserMediaError,
-              onUserMedia,
-              forceScreenshotSourceSize: true,
-              className: 'absolute inset-0 w-full h-full object-cover bg-black',
+          : e('video', {
+              ref: videoRef,
+              muted: true,
+              autoPlay: true,
               playsInline: true,
+              className: 'absolute inset-0 w-full h-full object-cover bg-black',
             })
       ),
       (!isReady || !permissionGranted) && !capturedImage
