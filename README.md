@@ -4,19 +4,13 @@ A minimal full-screen camera Progressive Web App built with React, Tailwind CSS,
 
 ## Running locally
 
-No build step is required. Start a static file server from the project root (the provided helper matches the required `ng serve` command):
-
-```bash
-node ./bin/ng.js serve
-```
-
-Or use Python directly:
+This project does not require a build step. Start a static file server from the project root (for example, with Python):
 
 ```bash
 python -m http.server 4173
 ```
 
-Then open `http://localhost:4173` in your browser. On first load, tap **Enable camera** and accept the permission prompt. If the preview stays black, try switching cameras or refreshing after granting access.
+Then open `http://localhost:4173` in your browser. The app pulls React, React DOM, Tailwind, and `react-webcam` from ESM/CDN endpoints, so an active internet connection is required on first load. The service worker caches local assets for quick reloads.
 
 ## Features
 - Full-screen camera preview with front/back toggle.
@@ -24,4 +18,3 @@ Then open `http://localhost:4173` in your browser. On first load, tap **Enable c
 - Captured photo overlay with **Retake** and **Save** options.
 - Automatic image download on save.
 - PWA manifest and service worker for installability.
-- In-app loading hint when the camera stream is still initializing.
