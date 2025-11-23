@@ -12,10 +12,10 @@
 - [x] Context Menu (Set Active, Edit, Archive).
 
 ## 3. Project Detail View [ ]
-- [ ] Header with stats.
-- [ ] Horizontal Tag Filter Scrollbar.
-- [ ] Search Stands.
-- [ ] Stand Cards (Company name, thumbnail, tag chips).
+- [x] Header with stats.
+- [x] Horizontal Tag Filter Scrollbar.
+- [x] Search Stands.
+- [x] Stand Cards (Company name, thumbnail, tag chips).
 
 ## 4. Stand Editor (The Form) [ ]
 - [ ] Basic Info (Name, Product Ref, Location).
