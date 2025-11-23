@@ -138,11 +138,11 @@ const PhotoRail = ({ photos, onAddPhoto, onPhotoSelected, onRemovePhoto, fileInp
         <input
           ref={cameraInputRef}
           type="file"
-          accept="image/*"
+          accept="image/*;capture=camera"
           capture="environment"
           className="hidden"
           onChange={onPhotoSelected}
-          multiple
+          multiple={false}
         />
         <input
           ref={fileInputRef}

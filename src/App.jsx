@@ -74,11 +74,7 @@ const INITIAL_STAND_FORM = {
   description: 'Premium modular booth showcasing our latest aerodynamic components with interactive demos.',
   pros: ['Lightweight modular walls', 'Immersive VR demo corner', 'Quick assembly crew'],
   cons: ['Limited storage space', 'Power drop far from entry'],
-  photos: [
-    { id: 'p1', label: 'Hero Render', color: '#22d3ee' },
-    { id: 'p2', label: 'VR Pod', color: '#a855f7' },
-    { id: 'p3', label: 'Lighting Plan', color: '#f97316' },
-  ],
+  photos: [],
   contacts: [
     {
       id: 'contact-1',
