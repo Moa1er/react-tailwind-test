@@ -74,11 +74,7 @@ const INITIAL_STAND_FORM = {
   description: 'Premium modular booth showcasing our latest aerodynamic components with interactive demos.',
   pros: ['Lightweight modular walls', 'Immersive VR demo corner', 'Quick assembly crew'],
   cons: ['Limited storage space', 'Power drop far from entry'],
-  photos: [
-    { id: 'p1', label: 'Hero Render', color: '#22d3ee' },
-    { id: 'p2', label: 'VR Pod', color: '#a855f7' },
-    { id: 'p3', label: 'Lighting Plan', color: '#f97316' },
-  ],
+  photos: [],
   contacts: [
     {
       id: 'contact-1',
@@ -109,7 +105,13 @@ const App = () => {
   const [contactsOpen, setContactsOpen] = useState(true);
   const [aiLoading, setAiLoading] = useState(false);
   const [toast, setToast] = useState('');
-  const photoInputRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const cameraVideoRef = useRef(null);
+  const nativeCameraInputRef = useRef(null);
+  const [cameraStream, setCameraStream] = useState(null);
+  const [cameraActive, setCameraActive] = useState(false);
+  const [cameraError, setCameraError] = useState('');
+  const [cameraLoading, setCameraLoading] = useState(false);
 
   const getPaletteColor = () => {
     const palette = globalTags.map((tag) => tag.color);
@@ -248,15 +250,112 @@ const App = () => {
     });
   };
 
-  const handleAddPhoto = () => {
-    if (photoInputRef.current) {
-      photoInputRef.current.click();
+  const stopCameraStream = () => {
+    setCameraStream((currentStream) => {
+      if (currentStream) {
+        currentStream.getTracks().forEach((track) => track.stop());
+      }
+      return null;
+    });
+    if (cameraVideoRef.current) {
+      cameraVideoRef.current.srcObject = null;
+    }
+    setCameraActive(false);
+  };
+
+  const startCamera = async () => {
+    if (cameraLoading) return;
+    if (cameraActive) {
+      stopCameraStream();
+    }
+    if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
+      setCameraError('Camera access is not supported on this device or browser.');
+      return;
+    }
+
+    setCameraError('');
+    setCameraLoading(true);
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' } },
+      });
+      setCameraStream(stream);
+      setCameraActive(true);
+    } catch (error) {
+      setCameraError('Camera permission denied or unavailable. Please enable camera access and try again.');
+    } finally {
+      setCameraLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const videoEl = cameraVideoRef.current;
+    if (!videoEl) return;
+
+    if (cameraStream) {
+      videoEl.srcObject = cameraStream;
+      videoEl.play().catch(() => {});
+    }
+
+    return () => {
+      videoEl.srcObject = null;
+    };
+  }, [cameraStream]);
+
+  const handleAddPhoto = (mode = 'file') => {
+    if (mode === 'camera') {
+      startCamera();
+      return;
+    }
+
+    if (mode === 'native') {
+      const cameraInput = nativeCameraInputRef.current;
+      if (cameraInput) {
+        cameraInput.click();
+        return;
+      }
+    }
+
+    const targetRef = fileInputRef;
+
+    if (targetRef?.current) {
+      targetRef.current.click();
       return;
     }
     const id = `photo-${Date.now()}`;
     setStandForm((prev) => ({
       ...prev,
-      photos: [...prev.photos, { id, label: 'New Capture', color: getPaletteColor() }],
+      photos: [...prev.photos, { id, label: 'New Upload', color: getPaletteColor() }],
+    }));
+  };
+
+  const handleCaptureFrame = () => {
+    if (!cameraActive || !cameraVideoRef.current) return;
+
+    const video = cameraVideoRef.current;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth || 1280;
+    canvas.height = video.videoHeight || 720;
+    const context = canvas.getContext('2d');
+
+    if (!context) return;
+
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const preview = canvas.toDataURL('image/png');
+    const id = `photo-${Date.now()}`;
+
+    setStandForm((prev) => ({
+      ...prev,
+      photos: [
+        ...prev.photos,
+        {
+          id,
+          label: 'Camera Capture',
+          color: getPaletteColor(),
+          preview,
+        },
+      ],
     }));
   };
 
@@ -290,6 +389,13 @@ const App = () => {
   const removePhoto = (id) => {
     setStandForm((prev) => ({ ...prev, photos: prev.photos.filter((photo) => photo.id !== id) }));
   };
+
+  useEffect(() => {
+    return () => {
+      stopCameraStream();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const mockAiData = (name) => {
     const lower = name.toLowerCase();
@@ -422,7 +528,15 @@ const App = () => {
           onAddPhoto={handleAddPhoto}
           onPhotoSelected={handlePhotoSelected}
           onRemovePhoto={removePhoto}
-          photoInputRef={photoInputRef}
+          fileInputRef={fileInputRef}
+          nativeCameraInputRef={nativeCameraInputRef}
+          cameraVideoRef={cameraVideoRef}
+          cameraActive={cameraActive}
+          cameraError={cameraError}
+          cameraLoading={cameraLoading}
+          onStartCamera={startCamera}
+          onStopCamera={stopCameraStream}
+          onCaptureFrame={handleCaptureFrame}
         />
       );
     }
