@@ -4,11 +4,11 @@ import { createRoot } from 'https://esm.sh/react-dom@18.3.1/client';
 const e = React.createElement;
 
 const views = [
-  { id: 'dashboard', label: 'Dashboard' },
-  { id: 'project', label: 'Project View' },
-  { id: 'standEditor', label: 'Stand Editor' },
-  { id: 'tagManager', label: 'Tag Manager' },
-  { id: 'export', label: 'Export' },
+  { id: 'dashboard', label: 'Dashboard', icon: '🏠' },
+  { id: 'project', label: 'Project View', icon: '📂' },
+  { id: 'standEditor', label: 'Stand Editor', icon: '✏️' },
+  { id: 'tagManager', label: 'Tag Manager', icon: '🏷️' },
+  { id: 'export', label: 'Export', icon: '⬇️' },
 ];
 
 const statusStyles = {
@@ -31,27 +31,51 @@ const TagChip = ({ label, color }) =>
     label
   );
 
-const CardActions = () =>
+const CardActions = ({ onSetActive, onEdit, onArchive }) =>
   e(
     'div',
     { className: 'flex items-center gap-2 text-xs text-slate-200' },
-    ['Set Active', 'Edit', 'Archive'].map((action) =>
+    [
       e(
         'button',
         {
-          key: action,
+          key: 'set',
           className:
             'px-3 py-1 rounded-full bg-slate-800/80 border border-slate-700 hover:bg-slate-700 transition',
           type: 'button',
+          onClick: onSetActive,
         },
-        action
-      )
-    )
+        'Set Active'
+      ),
+      e(
+        'button',
+        {
+          key: 'edit',
+          className:
+            'px-3 py-1 rounded-full bg-slate-800/80 border border-slate-700 hover:bg-slate-700 transition',
+          type: 'button',
+          onClick: onEdit,
+        },
+        'Edit'
+      ),
+      e(
+        'button',
+        {
+          key: 'archive',
+          className:
+            'px-3 py-1 rounded-full bg-slate-800/80 border border-slate-700 hover:bg-slate-700 transition',
+          type: 'button',
+          onClick: onArchive,
+        },
+        'Archive'
+      ),
+    ]
   );
 
 function App() {
   const [activeView, setActiveView] = useState('dashboard');
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedProjectId, setSelectedProjectId] = useState('expo-1');
   const [globalTags] = useState([
     { id: 't1', label: 'Sustainability', color: '#22d3ee' },
     { id: 't2', label: 'Innovation', color: '#a855f7' },
@@ -59,7 +83,7 @@ function App() {
     { id: 't4', label: 'Hospitality', color: '#34d399' },
     { id: 't5', label: 'Retail', color: '#facc15' },
   ]);
-  const [projects] = useState([
+  const [projects, setProjects] = useState([
     {
       id: 'expo-1',
       name: 'Future Mobility Expo',
@@ -98,6 +122,52 @@ function App() {
     },
   ]);
 
+  const handleSetActive = (projectId) => {
+    setProjects((prev) =>
+      prev.map((project) =>
+        project.id === projectId
+          ? { ...project, status: 'Active' }
+          : project.status === 'Active'
+            ? { ...project, status: 'Planning' }
+            : project
+      )
+    );
+    setSelectedProjectId(projectId);
+  };
+
+  const handleArchive = (projectId) => {
+    setProjects((prev) =>
+      prev.map((project) => (project.id === projectId ? { ...project, status: 'Archived' } : project))
+    );
+    setSelectedProjectId(projectId);
+  };
+
+  const handleEdit = (projectId) => {
+    setSelectedProjectId(projectId);
+    setActiveView('standEditor');
+  };
+
+  const handleNewProject = () => {
+    const now = new Date();
+    const newId = `project-${now.getTime()}`;
+    const today = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const defaultTags = globalTags.slice(0, 2).map((tag) => tag.label);
+
+    const newProject = {
+      id: newId,
+      name: 'Untitled Project',
+      location: 'Set location',
+      dates: today,
+      status: 'Planning',
+      tags: defaultTags,
+      stands: [],
+    };
+
+    setProjects((prev) => [newProject, ...prev]);
+    setSelectedProjectId(newId);
+    setActiveView('project');
+  };
+
   const filteredProjects = useMemo(() => {
     const value = searchTerm.trim().toLowerCase();
     if (!value) return projects;
@@ -108,6 +178,11 @@ function App() {
         project.tags.some((tag) => tag.toLowerCase().includes(value))
     );
   }, [projects, searchTerm]);
+
+  const selectedProject = useMemo(
+    () => projects.find((project) => project.id === selectedProjectId) ?? projects[0],
+    [projects, selectedProjectId]
+  );
 
   const renderDashboard = () =>
     e(
@@ -155,8 +230,12 @@ function App() {
                     'article',
                     {
                       key: project.id,
-                      className:
-                        'bg-gradient-to-br from-slate-900 to-slate-800 rounded-xl border border-slate-700/60 p-4 shadow-lg space-y-3',
+                      className: `bg-gradient-to-br from-slate-900 to-slate-800 rounded-xl border p-4 shadow-lg space-y-3 transition hover:border-cyan-400/50 ${
+                        project.id === selectedProjectId
+                          ? 'border-cyan-400/70 shadow-cyan-500/20'
+                          : 'border-slate-700/60'
+                      }`,
+                      onClick: () => setSelectedProjectId(project.id),
                     },
                     [
                       e(
@@ -214,7 +293,12 @@ function App() {
                           ),
                         ]
                       ),
-                      e(CardActions, { key: 'actions' }),
+                      e(CardActions, {
+                        key: 'actions',
+                        onSetActive: () => handleSetActive(project.id),
+                        onEdit: () => handleEdit(project.id),
+                        onArchive: () => handleArchive(project.id),
+                      }),
                     ]
                   )
                 )
@@ -243,10 +327,17 @@ function App() {
   const renderPlaceholder = (label) =>
     e(
       'div',
-      { className: 'rounded-2xl border border-slate-800 bg-slate-900/70 p-6 text-center text-slate-300' },
+      { className: 'rounded-2xl border border-slate-800 bg-slate-900/70 p-6 text-center text-slate-300 space-y-2' },
       [
         e('p', { key: 'title', className: 'font-semibold text-white' }, label),
-        e('p', { key: 'subtitle', className: 'text-sm text-slate-400 mt-2' }, 'Build steps coming soon.'),
+        e('p', { key: 'subtitle', className: 'text-sm text-slate-400' }, 'Build steps coming soon.'),
+        selectedProject
+          ? e(
+              'p',
+              { key: 'selected', className: 'text-xs text-slate-500' },
+              `Selected project: ${selectedProject.name}`
+            )
+          : null,
       ]
     );
 
@@ -272,7 +363,7 @@ function App() {
     { className: 'min-h-screen bg-slate-950 text-white flex justify-center' },
     e(
       'div',
-      { className: 'w-full max-w-md px-4 pb-24 pt-8 space-y-6' },
+      { className: 'w-full max-w-md px-4 pb-32 pt-8 space-y-6' },
       [
         e(
           'header',
@@ -291,26 +382,6 @@ function App() {
             ),
           ]
         ),
-        e(
-          'div',
-          { key: 'nav', className: 'flex gap-2 overflow-x-auto pb-2' },
-          views.map((view) =>
-            e(
-              'button',
-              {
-                key: view.id,
-                type: 'button',
-                onClick: () => setActiveView(view.id),
-                className: `px-4 py-2 rounded-full border text-sm font-medium transition whitespace-nowrap ${
-                  activeView === view.id
-                    ? 'bg-cyan-500 text-slate-950 border-cyan-400 shadow-lg shadow-cyan-500/30'
-                    : 'bg-slate-900/70 border-slate-800 text-slate-200 hover:border-slate-700'
-                }`,
-              },
-              view.label
-            )
-          )
-        ),
         e('div', { key: 'view' }, renderView()),
         e(
           'button',
@@ -318,9 +389,37 @@ function App() {
             key: 'fab',
             type: 'button',
             className:
-              'fixed bottom-6 right-6 bg-cyan-500 text-slate-950 font-semibold px-5 py-3 rounded-full shadow-xl shadow-cyan-500/40 border border-cyan-300 hover:scale-[1.02] active:scale-95 transition',
+              'fixed bottom-20 right-6 bg-cyan-500 text-slate-950 font-semibold px-5 py-3 rounded-full shadow-xl shadow-cyan-500/40 border border-cyan-300 hover:scale-[1.02] active:scale-95 transition',
+            onClick: handleNewProject,
           },
           '+ New Project'
+        ),
+        e(
+          'nav',
+          {
+            key: 'bottom-nav',
+            className:
+              'fixed bottom-0 left-0 right-0 bg-slate-950/95 border-t border-slate-800 backdrop-blur px-4 py-3 flex justify-between max-w-md mx-auto',
+          },
+          views.map((view) =>
+            e(
+              'button',
+              {
+                key: view.id,
+                type: 'button',
+                onClick: () => setActiveView(view.id),
+                className: `flex-1 flex flex-col items-center gap-1 text-xs font-medium py-2 rounded-xl transition ${
+                  activeView === view.id
+                    ? 'text-cyan-300 bg-slate-900 border border-cyan-400/40'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`,
+              },
+              [
+                e('span', { key: 'icon', className: 'text-lg' }, view.icon),
+                e('span', { key: 'label' }, view.label.split(' ')[0]),
+              ]
+            )
+          )
         ),
       ]
     )
