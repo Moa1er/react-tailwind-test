@@ -18,3 +18,10 @@ Then open `http://localhost:4173` in your browser. The app pulls React, React DO
 - Captured photo overlay with **Retake** and **Save** options.
 - Automatic image download on save.
 - PWA manifest and service worker for installability.
+
+## AI suggestions with ChatGPT
+The stand editor now requests marketing copy from ChatGPT without exposing your key to the browser. Configure it with the steps below:
+
+1. Create an `OPENAI_API_KEY` project environment variable in Vercel (Settings → Environment Variables) or a local `.env` file based on `.env.example`. Never commit the actual key.
+2. Deploy as usual; the Edge function at `/api/chatgpt` reads the key server-side and returns description, pros, and cons JSON.
+3. For local development, run `vercel dev` (or configure your preferred Vite proxy) so the `/api/chatgpt` route is available. If the API is unreachable, the UI falls back to built-in sample suggestions.
