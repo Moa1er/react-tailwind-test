@@ -124,6 +124,30 @@ function App() {
     },
   ]);
 
+  const [standForm, setStandForm] = useState({
+    companyName: 'AeroDynamics',
+    productRef: 'AD-204',
+    description:
+      'Premium modular booth showcasing our latest aerodynamic components with interactive demos.',
+    contacts: [
+      {
+        id: 'contact-1',
+        name: 'Lena Fischer',
+        role: 'Marketing Lead',
+        email: 'lena.fischer@aerodynamics.io',
+        phone: '+49 30 1234 987',
+      },
+      {
+        id: 'contact-2',
+        name: 'Samir Patel',
+        role: 'Partnerships',
+        email: 'samir.patel@aerodynamics.io',
+        phone: '+1 737 555 2299',
+      },
+    ],
+  });
+  const [contactsOpen, setContactsOpen] = useState(true);
+
   const handleSetActive = (projectId) => {
     setProjects((prev) =>
       prev.map((project) =>
@@ -211,6 +235,37 @@ function App() {
       return matchesSearch && matchesTag;
     });
   }, [activeTagFilter, selectedProject, standSearch]);
+
+  const updateStandField = (field, value) => {
+    setStandForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const updateContact = (id, field, value) => {
+    setStandForm((prev) => ({
+      ...prev,
+      contacts: prev.contacts.map((contact) =>
+        contact.id === id ? { ...contact, [field]: value } : contact
+      ),
+    }));
+  };
+
+  const addContact = () => {
+    const timestamp = Date.now();
+    setStandForm((prev) => ({
+      ...prev,
+      contacts: [
+        ...prev.contacts,
+        { id: `contact-${timestamp}`, name: '', role: '', email: '', phone: '' },
+      ],
+    }));
+  };
+
+  const removeContact = (id) => {
+    setStandForm((prev) => ({
+      ...prev,
+      contacts: prev.contacts.filter((contact) => contact.id !== id),
+    }));
+  };
 
   const renderDashboard = () =>
     e(
@@ -598,6 +653,209 @@ function App() {
       ]
     );
 
+  const renderStandEditor = () =>
+    e(
+      'div',
+      { className: 'space-y-5' },
+      [
+        e(
+          'div',
+          {
+            key: 'basic-info',
+            className:
+              'rounded-2xl border border-slate-800 bg-slate-900/70 p-4 space-y-4 shadow-lg shadow-slate-950/40',
+          },
+          [
+            e(
+              'div',
+              { key: 'header', className: 'flex items-center justify-between' },
+              [
+                e('div', { key: 'title' }, [
+                  e('p', { key: 'eyebrow', className: 'text-xs uppercase tracking-[0.2em] text-cyan-300' }, 'Stand'),
+                  e('h2', { key: 'heading', className: 'text-lg font-semibold' }, 'Basic Info'),
+                ]),
+                e(
+                  'span',
+                  { key: 'pill', className: 'px-3 py-1 rounded-full bg-slate-800 text-xs text-slate-300 border border-slate-700' },
+                  'Step 1'
+                ),
+              ]
+            ),
+            e(
+              'div',
+              { key: 'fields', className: 'space-y-4' },
+              [
+                e(
+                  'div',
+                  { key: 'company', className: 'space-y-2' },
+                  [
+                    e('label', { className: 'text-sm text-slate-200 font-medium', htmlFor: 'companyName' }, 'Company Name'),
+                    e('input', {
+                      id: 'companyName',
+                      value: standForm.companyName,
+                      onChange: (event) => updateStandField('companyName', event.target.value),
+                      className:
+                        'w-full rounded-xl bg-slate-100 text-slate-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-cyan-400',
+                      placeholder: 'Enter company name',
+                    }),
+                  ]
+                ),
+                e(
+                  'div',
+                  { key: 'productRef', className: 'space-y-2' },
+                  [
+                    e('label', { className: 'text-sm text-slate-200 font-medium', htmlFor: 'productRef' }, 'Product Ref'),
+                    e('input', {
+                      id: 'productRef',
+                      value: standForm.productRef,
+                      onChange: (event) => updateStandField('productRef', event.target.value),
+                      className:
+                        'w-full rounded-xl bg-slate-100 text-slate-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-cyan-400',
+                      placeholder: 'Internal reference',
+                    }),
+                  ]
+                ),
+                e(
+                  'div',
+                  { key: 'description', className: 'space-y-2' },
+                  [
+                    e('label', { className: 'text-sm text-slate-200 font-medium', htmlFor: 'description' }, 'Description'),
+                    e('textarea', {
+                      id: 'description',
+                      rows: 4,
+                      value: standForm.description,
+                      onChange: (event) => updateStandField('description', event.target.value),
+                      className:
+                        'w-full rounded-xl bg-slate-100 text-slate-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-cyan-400 resize-none',
+                      placeholder: 'Describe the stand goals, layout, and highlights',
+                    }),
+                  ]
+                ),
+              ]
+            ),
+          ]
+        ),
+        e(
+          'div',
+          {
+            key: 'contacts',
+            className:
+              'rounded-2xl border border-slate-800 bg-slate-900/70 p-4 space-y-4 shadow-lg shadow-slate-950/40',
+          },
+          [
+            e(
+              'button',
+              {
+                key: 'toggle',
+                type: 'button',
+                className:
+                  'w-full flex items-center justify-between rounded-xl bg-slate-800/60 border border-slate-700 px-4 py-3 text-left',
+                onClick: () => setContactsOpen((open) => !open),
+              },
+              [
+                e('div', { key: 'text', className: 'space-y-1' }, [
+                  e('p', { key: 'eyebrow', className: 'text-xs uppercase tracking-[0.2em] text-cyan-300' }, 'Contacts'),
+                  e('span', { key: 'title', className: 'text-sm font-semibold' }, 'Key Stakeholders'),
+                ]),
+                e(
+                  'span',
+                  { key: 'chevron', className: 'text-lg' },
+                  contactsOpen ? '▴' : '▾'
+                ),
+              ]
+            ),
+            contactsOpen
+              ? e(
+                  'div',
+                  { key: 'contact-list', className: 'space-y-3' },
+                  [
+                    ...standForm.contacts.map((contact) =>
+                      e(
+                        'div',
+                        {
+                          key: contact.id,
+                          className:
+                            'rounded-xl bg-slate-100 text-slate-900 p-3 space-y-3 border border-slate-200 shadow-inner',
+                        },
+                        [
+                          e(
+                            'div',
+                            { key: 'row', className: 'flex justify-between items-start gap-3' },
+                            [
+                              e('p', { key: 'label', className: 'text-xs font-semibold text-slate-700 uppercase' }, 'Contact'),
+                              e(
+                                'button',
+                                {
+                                  key: 'delete',
+                                  type: 'button',
+                                  onClick: () => removeContact(contact.id),
+                                  className:
+                                    'text-xs text-slate-500 hover:text-red-500 px-2 py-1 rounded-lg border border-transparent hover:border-red-200',
+                                },
+                                'Delete'
+                              ),
+                            ]
+                          ),
+                          e(
+                            'div',
+                            { key: 'fields', className: 'space-y-2' },
+                            [
+                              e('input', {
+                                key: 'name',
+                                value: contact.name,
+                                onChange: (event) => updateContact(contact.id, 'name', event.target.value),
+                                placeholder: 'Name',
+                                className:
+                                  'w-full rounded-xl bg-slate-50 text-slate-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-cyan-400 border border-slate-200',
+                              }),
+                              e('input', {
+                                key: 'role',
+                                value: contact.role,
+                                onChange: (event) => updateContact(contact.id, 'role', event.target.value),
+                                placeholder: 'Role / Responsibility',
+                                className:
+                                  'w-full rounded-xl bg-slate-50 text-slate-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-cyan-400 border border-slate-200',
+                              }),
+                              e('input', {
+                                key: 'email',
+                                value: contact.email,
+                                onChange: (event) => updateContact(contact.id, 'email', event.target.value),
+                                placeholder: 'Email',
+                                className:
+                                  'w-full rounded-xl bg-slate-50 text-slate-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-cyan-400 border border-slate-200',
+                              }),
+                              e('input', {
+                                key: 'phone',
+                                value: contact.phone,
+                                onChange: (event) => updateContact(contact.id, 'phone', event.target.value),
+                                placeholder: 'Phone',
+                                className:
+                                  'w-full rounded-xl bg-slate-50 text-slate-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-cyan-400 border border-slate-200',
+                              }),
+                            ]
+                          ),
+                        ]
+                      )
+                    ),
+                    e(
+                      'button',
+                      {
+                        key: 'add-contact',
+                        type: 'button',
+                        onClick: addContact,
+                        className:
+                          'w-full rounded-xl border border-dashed border-cyan-300/50 text-cyan-200 px-4 py-2 text-sm font-semibold hover:bg-cyan-500/10 transition',
+                      },
+                      '+ Add Contact'
+                    ),
+                  ]
+                )
+              : null,
+          ]
+        ),
+      ]
+    );
+
   const renderView = () => {
     switch (activeView) {
       case 'dashboard':
@@ -605,7 +863,7 @@ function App() {
       case 'project':
         return renderProjectDetail();
       case 'standEditor':
-        return renderPlaceholder('Stand Editor');
+        return renderStandEditor();
       case 'tagManager':
         return renderPlaceholder('Tag Management');
       case 'export':

@@ -18,8 +18,8 @@
 - [x] Stand Cards (Company name, thumbnail, tag chips).
 
 ## 4. Stand Editor (The Form) [ ]
-- [ ] Basic Info (Name, Product Ref, Location).
-- [ ] Contact Management (Accordion style, Add/Remove contacts).
+- [x] Basic Info (Company Name, Product Ref, Description).
+- [x] Contact Management (Accordion style, Add/Remove contacts).
 - [ ] "Generate with AI" Feature (Mock 2s loading -> Fill data).
 - [ ] Pros & Cons Section (Dynamic Add/Remove list items).
 - [ ] Photo Gallery (Horizontal scroll, Add button mockup).
