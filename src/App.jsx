@@ -107,6 +107,7 @@ const App = () => {
   const [toast, setToast] = useState('');
   const fileInputRef = useRef(null);
   const cameraVideoRef = useRef(null);
+  const nativeCameraInputRef = useRef(null);
   const [cameraStream, setCameraStream] = useState(null);
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState('');
@@ -256,6 +257,9 @@ const App = () => {
       }
       return null;
     });
+    if (cameraVideoRef.current) {
+      cameraVideoRef.current.srcObject = null;
+    }
     setCameraActive(false);
   };
 
@@ -277,10 +281,6 @@ const App = () => {
         video: { facingMode: { ideal: 'environment' } },
       });
       setCameraStream(stream);
-      if (cameraVideoRef.current) {
-        cameraVideoRef.current.srcObject = stream;
-        await cameraVideoRef.current.play().catch(() => {});
-      }
       setCameraActive(true);
     } catch (error) {
       setCameraError('Camera permission denied or unavailable. Please enable camera access and try again.');
@@ -289,10 +289,32 @@ const App = () => {
     }
   };
 
+  useEffect(() => {
+    const videoEl = cameraVideoRef.current;
+    if (!videoEl) return;
+
+    if (cameraStream) {
+      videoEl.srcObject = cameraStream;
+      videoEl.play().catch(() => {});
+    }
+
+    return () => {
+      videoEl.srcObject = null;
+    };
+  }, [cameraStream]);
+
   const handleAddPhoto = (mode = 'file') => {
     if (mode === 'camera') {
       startCamera();
       return;
+    }
+
+    if (mode === 'native') {
+      const cameraInput = nativeCameraInputRef.current;
+      if (cameraInput) {
+        cameraInput.click();
+        return;
+      }
     }
 
     const targetRef = fileInputRef;
@@ -507,6 +529,7 @@ const App = () => {
           onPhotoSelected={handlePhotoSelected}
           onRemovePhoto={removePhoto}
           fileInputRef={fileInputRef}
+          nativeCameraInputRef={nativeCameraInputRef}
           cameraVideoRef={cameraVideoRef}
           cameraActive={cameraActive}
           cameraError={cameraError}

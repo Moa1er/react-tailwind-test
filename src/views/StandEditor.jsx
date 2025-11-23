@@ -129,6 +129,7 @@ const PhotoRail = ({
   onPhotoSelected,
   onRemovePhoto,
   fileInputRef,
+  nativeCameraInputRef,
   cameraVideoRef,
   cameraActive,
   cameraError,
@@ -182,16 +183,16 @@ const PhotoRail = ({
               </div>
             ) : null}
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={onStartCamera}
-              disabled={cameraLoading}
-              className="rounded-lg bg-cyan-600 px-3 py-2 text-sm font-semibold text-white hover:bg-cyan-500 disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {cameraLoading ? 'Requesting camera…' : 'Start Camera'}
-            </button>
-            <button
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={onStartCamera}
+                disabled={cameraLoading}
+                className="rounded-lg bg-cyan-600 px-3 py-2 text-sm font-semibold text-white hover:bg-cyan-500 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {cameraLoading ? 'Requesting camera…' : 'Start Camera'}
+              </button>
+              <button
               type="button"
               onClick={onCaptureFrame}
               disabled={!cameraActive}
@@ -203,12 +204,19 @@ const PhotoRail = ({
               type="button"
               onClick={onStopCamera}
               disabled={!cameraActive}
-              className="rounded-lg border border-slate-600 px-3 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-700/60 disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              Stop Camera
-            </button>
+                className="rounded-lg border border-slate-600 px-3 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-700/60 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                Stop Camera
+              </button>
+              <button
+                type="button"
+                onClick={() => onAddPhoto('native')}
+                className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-500"
+              >
+                Open Device Camera
+              </button>
+            </div>
           </div>
-        </div>
 
         <div className="rounded-2xl border border-slate-800 bg-slate-950/50 p-3 space-y-3">
           <div className="flex items-center justify-between">
@@ -224,6 +232,14 @@ const PhotoRail = ({
             className="hidden"
             onChange={onPhotoSelected}
             multiple
+          />
+          <input
+            ref={nativeCameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={onPhotoSelected}
           />
           <div className="flex items-center gap-3 overflow-x-auto pb-2">
             <button
@@ -279,6 +295,7 @@ const StandEditor = ({
   onPhotoSelected,
   onRemovePhoto,
   fileInputRef,
+  nativeCameraInputRef,
   cameraVideoRef,
   cameraActive,
   cameraError,
@@ -399,6 +416,7 @@ const StandEditor = ({
         onPhotoSelected={onPhotoSelected}
         onRemovePhoto={onRemovePhoto}
         fileInputRef={fileInputRef}
+        nativeCameraInputRef={nativeCameraInputRef}
         cameraVideoRef={cameraVideoRef}
         cameraActive={cameraActive}
         cameraError={cameraError}
