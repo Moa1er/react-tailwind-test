@@ -109,7 +109,8 @@ const App = () => {
   const [contactsOpen, setContactsOpen] = useState(true);
   const [aiLoading, setAiLoading] = useState(false);
   const [toast, setToast] = useState('');
-  const photoInputRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
 
   const getPaletteColor = () => {
     const palette = globalTags.map((tag) => tag.color);
@@ -248,9 +249,11 @@ const App = () => {
     });
   };
 
-  const handleAddPhoto = () => {
-    if (photoInputRef.current) {
-      photoInputRef.current.click();
+  const handleAddPhoto = (mode = 'file') => {
+    const targetRef = mode === 'camera' ? cameraInputRef : fileInputRef;
+
+    if (targetRef?.current) {
+      targetRef.current.click();
       return;
     }
     const id = `photo-${Date.now()}`;
@@ -422,7 +425,8 @@ const App = () => {
           onAddPhoto={handleAddPhoto}
           onPhotoSelected={handlePhotoSelected}
           onRemovePhoto={removePhoto}
-          photoInputRef={photoInputRef}
+          fileInputRef={fileInputRef}
+          cameraInputRef={cameraInputRef}
         />
       );
     }

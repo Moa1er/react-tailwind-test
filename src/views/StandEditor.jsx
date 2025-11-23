@@ -123,7 +123,7 @@ const Contacts = ({ contacts, isOpen, onToggle, onAdd, onRemove, onUpdate }) => 
   );
 };
 
-const PhotoRail = ({ photos, onAddPhoto, onPhotoSelected, onRemovePhoto, inputRef }) => {
+const PhotoRail = ({ photos, onAddPhoto, onPhotoSelected, onRemovePhoto, fileInputRef, cameraInputRef }) => {
   return (
     <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4 space-y-3 shadow-lg shadow-slate-950/40">
       <div className="flex items-center justify-between">
@@ -133,9 +133,10 @@ const PhotoRail = ({ photos, onAddPhoto, onPhotoSelected, onRemovePhoto, inputRe
         </div>
         <span className="text-xs text-slate-400">{photos.length} items</span>
       </div>
+      <p className="text-xs text-slate-400">Capture directly from your camera or upload from your files. Previews appear immediately after selection.</p>
       <div className="flex items-center gap-3 overflow-x-auto pb-2">
         <input
-          ref={inputRef}
+          ref={cameraInputRef}
           type="file"
           accept="image/*"
           capture="environment"
@@ -143,12 +144,27 @@ const PhotoRail = ({ photos, onAddPhoto, onPhotoSelected, onRemovePhoto, inputRe
           onChange={onPhotoSelected}
           multiple
         />
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={onPhotoSelected}
+          multiple
+        />
         <button
           type="button"
-          onClick={onAddPhoto}
+          onClick={() => onAddPhoto('camera')}
           className="flex-none h-24 w-24 rounded-2xl border-2 border-dashed border-cyan-300/60 text-cyan-200 flex items-center justify-center text-sm font-semibold bg-slate-900/80 hover:bg-cyan-500/5"
         >
-          📷 Camera / Files
+          📷 Use Camera
+        </button>
+        <button
+          type="button"
+          onClick={() => onAddPhoto('file')}
+          className="flex-none h-24 w-24 rounded-2xl border-2 border-dashed border-slate-400/60 text-slate-100 flex items-center justify-center text-sm font-semibold bg-slate-900/80 hover:bg-slate-700/60"
+        >
+          📁 Upload Files
         </button>
         {photos.map((photo) => (
           <div
@@ -193,7 +209,8 @@ const StandEditor = ({
   onAddPhoto,
   onPhotoSelected,
   onRemovePhoto,
-  photoInputRef,
+  fileInputRef,
+  cameraInputRef,
 }) => {
   return (
     <div className="space-y-5">
@@ -306,7 +323,8 @@ const StandEditor = ({
         onAddPhoto={onAddPhoto}
         onPhotoSelected={onPhotoSelected}
         onRemovePhoto={onRemovePhoto}
-        inputRef={photoInputRef}
+        fileInputRef={fileInputRef}
+        cameraInputRef={cameraInputRef}
       />
 
       <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4 space-y-3 shadow-lg shadow-slate-950/40">
