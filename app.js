@@ -129,6 +129,13 @@ function App() {
     productRef: 'AD-204',
     description:
       'Premium modular booth showcasing our latest aerodynamic components with interactive demos.',
+    pros: ['Lightweight modular walls', 'Immersive VR demo corner', 'Quick assembly crew'],
+    cons: ['Limited storage space', 'Power drop far from entry'],
+    photos: [
+      { id: 'p1', label: 'Hero Render', color: '#22d3ee' },
+      { id: 'p2', label: 'VR Pod', color: '#a855f7' },
+      { id: 'p3', label: 'Lighting Plan', color: '#f97316' },
+    ],
     contacts: [
       {
         id: 'contact-1',
@@ -147,6 +154,8 @@ function App() {
     ],
   });
   const [contactsOpen, setContactsOpen] = useState(true);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [toast, setToast] = useState('');
 
   const handleSetActive = (projectId) => {
     setProjects((prev) =>
@@ -265,6 +274,86 @@ function App() {
       ...prev,
       contacts: prev.contacts.filter((contact) => contact.id !== id),
     }));
+  };
+
+  const addListItem = (field) => {
+    setStandForm((prev) => ({
+      ...prev,
+      [field]: [...(prev[field] ?? []), ''],
+    }));
+  };
+
+  const updateListItem = (field, index, value) => {
+    setStandForm((prev) => {
+      const updated = [...prev[field]];
+      updated[index] = value;
+      return { ...prev, [field]: updated };
+    });
+  };
+
+  const removeListItem = (field, index) => {
+    setStandForm((prev) => {
+      const updated = prev[field].filter((_, i) => i !== index);
+      return { ...prev, [field]: updated };
+    });
+  };
+
+  const addPhoto = () => {
+    const palette = ['#22d3ee', '#a855f7', '#f97316', '#34d399', '#facc15'];
+    const color = palette[Math.floor(Math.random() * palette.length)];
+    const id = `photo-${Date.now()}`;
+    setStandForm((prev) => ({
+      ...prev,
+      photos: [...prev.photos, { id, label: 'New Capture', color }],
+    }));
+  };
+
+  const removePhoto = (id) => {
+    setStandForm((prev) => ({ ...prev, photos: prev.photos.filter((photo) => photo.id !== id) }));
+  };
+
+  const mockAiData = (name) => {
+    const lower = name.toLowerCase();
+    if (lower.includes('apple')) {
+      return {
+        description:
+          'Premium experience booth highlighting iPhone lineup with hands-on camera demos, iOS tips bar, and sustainability messaging.',
+        pros: ['Instant brand recognition', 'Staff trained on Pro camera tips', 'High dwell time near demo bar'],
+        cons: ['Requires strong Wi-Fi for iCloud demos', 'High security staffing needs'],
+      };
+    }
+    if (lower.includes('volt') || lower.includes('ride')) {
+      return {
+        description:
+          'EV mobility corner with test-drive simulators, modular charging showcase, and bold neon edge lighting.',
+        pros: ['Immersive simulator attracts queues', 'Clear sustainability storytelling', 'Scalable footprint'],
+        cons: ['Simulator needs extra power', 'Queue management barriers required'],
+      };
+    }
+    return {
+      description:
+        'Engaging stand featuring interactive demos, tactile product displays, and a concise value narrative tailored to visitors.',
+      pros: ['Clear messaging hierarchy', 'Hands-on product zones', 'Staff rotation schedule defined'],
+      cons: ['Pending AV vendor confirmation', 'Need final safety sign-off'],
+    };
+  };
+
+  const handleGenerateAi = () => {
+    if (aiLoading) return;
+    setAiLoading(true);
+    setToast('');
+    setTimeout(() => {
+      const aiData = mockAiData(standForm.companyName || '');
+      setStandForm((prev) => ({
+        ...prev,
+        description: aiData.description,
+        pros: aiData.pros,
+        cons: aiData.cons,
+      }));
+      setAiLoading(false);
+      setToast('AI suggestions applied successfully.');
+      setTimeout(() => setToast(''), 2500);
+    }, 2000);
   };
 
   const renderDashboard = () =>
@@ -687,6 +776,25 @@ function App() {
               [
                 e(
                   'div',
+                  { key: 'ai-row', className: 'flex items-center justify-between gap-3' },
+                  [
+                    e('p', { key: 'hint', className: 'text-xs text-slate-400' }, 'Speed up with AI suggestions'),
+                    e(
+                      'button',
+                      {
+                        key: 'ai-btn',
+                        type: 'button',
+                        onClick: handleGenerateAi,
+                        disabled: aiLoading,
+                        className:
+                          'flex items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold border border-cyan-300/60 text-cyan-200 hover:bg-cyan-500/10 disabled:opacity-60 disabled:cursor-not-allowed',
+                      },
+                      aiLoading ? 'Generating…' : 'Generate with AI'
+                    ),
+                  ]
+                ),
+                e(
+                  'div',
                   { key: 'company', className: 'space-y-2' },
                   [
                     e('label', { className: 'text-sm text-slate-200 font-medium', htmlFor: 'companyName' }, 'Company Name'),
@@ -729,6 +837,152 @@ function App() {
                         'w-full rounded-xl bg-slate-100 text-slate-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-cyan-400 resize-none',
                       placeholder: 'Describe the stand goals, layout, and highlights',
                     }),
+                  ]
+                ),
+              ]
+            ),
+          ]
+        ),
+        e(
+          'div',
+          {
+            key: 'pros-cons',
+            className:
+              'rounded-2xl border border-slate-800 bg-slate-900/70 p-4 space-y-4 shadow-lg shadow-slate-950/40',
+          },
+          [
+            e(
+              'div',
+              { key: 'header', className: 'flex items-center justify-between' },
+              [
+                e('div', { key: 'title' }, [
+                  e('p', { key: 'eyebrow', className: 'text-xs uppercase tracking-[0.2em] text-cyan-300' }, 'Stand'),
+                  e('h2', { key: 'heading', className: 'text-lg font-semibold' }, 'Pros & Cons'),
+                ]),
+                e(
+                  'div',
+                  { key: 'legend', className: 'flex items-center gap-3 text-xs text-slate-400' },
+                  [
+                    e('span', { key: 'pro-dot', className: 'h-2 w-2 rounded-full bg-emerald-400 inline-block' }),
+                    'Pros',
+                    e('span', { key: 'con-dot', className: 'h-2 w-2 rounded-full bg-rose-400 inline-block' }),
+                    'Cons',
+                  ]
+                ),
+              ]
+            ),
+            e(
+              'div',
+              { key: 'lists', className: 'grid grid-cols-1 md:grid-cols-2 gap-3' },
+              [
+                e(
+                  'div',
+                  {
+                    key: 'pros',
+                    className:
+                      'rounded-xl border border-emerald-400/40 bg-emerald-500/5 p-3 space-y-3 shadow-inner shadow-emerald-500/10',
+                  },
+                  [
+                    e('div', { key: 'label', className: 'flex items-center justify-between' }, [
+                      e('span', { key: 'title', className: 'text-sm font-semibold text-emerald-200' }, 'Pros'),
+                      e(
+                        'button',
+                        {
+                          key: 'add-pro',
+                          type: 'button',
+                          onClick: () => addListItem('pros'),
+                          className:
+                            'text-xs font-semibold text-emerald-200 px-2 py-1 rounded-lg border border-emerald-300/50 hover:bg-emerald-400/10',
+                        },
+                        '+ Add'
+                      ),
+                    ]),
+                    ...standForm.pros.map((item, index) =>
+                      e(
+                        'div',
+                        { key: `pro-${index}`, className: 'flex items-center gap-2' },
+                        [
+                          e('span', {
+                            key: 'dot',
+                            className: 'h-2 w-2 rounded-full bg-emerald-400',
+                          }),
+                          e('input', {
+                            key: 'input',
+                            value: item,
+                            onChange: (event) => updateListItem('pros', index, event.target.value),
+                            placeholder: 'Benefit',
+                            className:
+                              'flex-1 rounded-lg bg-slate-50 text-slate-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-300 border border-emerald-100',
+                          }),
+                          e(
+                            'button',
+                            {
+                              key: 'remove',
+                              type: 'button',
+                              onClick: () => removeListItem('pros', index),
+                              className:
+                                'text-xs text-emerald-200 px-2 py-1 rounded-lg border border-transparent hover:border-emerald-200',
+                            },
+                            '×'
+                          ),
+                        ]
+                      )
+                    ),
+                  ]
+                ),
+                e(
+                  'div',
+                  {
+                    key: 'cons',
+                    className:
+                      'rounded-xl border border-rose-400/40 bg-rose-500/5 p-3 space-y-3 shadow-inner shadow-rose-500/10',
+                  },
+                  [
+                    e('div', { key: 'label', className: 'flex items-center justify-between' }, [
+                      e('span', { key: 'title', className: 'text-sm font-semibold text-rose-200' }, 'Cons'),
+                      e(
+                        'button',
+                        {
+                          key: 'add-con',
+                          type: 'button',
+                          onClick: () => addListItem('cons'),
+                          className:
+                            'text-xs font-semibold text-rose-200 px-2 py-1 rounded-lg border border-rose-300/50 hover:bg-rose-400/10',
+                        },
+                        '+ Add'
+                      ),
+                    ]),
+                    ...standForm.cons.map((item, index) =>
+                      e(
+                        'div',
+                        { key: `con-${index}`, className: 'flex items-center gap-2' },
+                        [
+                          e('span', {
+                            key: 'dot',
+                            className: 'h-2 w-2 rounded-full bg-rose-400',
+                          }),
+                          e('input', {
+                            key: 'input',
+                            value: item,
+                            onChange: (event) => updateListItem('cons', index, event.target.value),
+                            placeholder: 'Risk or limitation',
+                            className:
+                              'flex-1 rounded-lg bg-slate-50 text-slate-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-rose-300 border border-rose-100',
+                          }),
+                          e(
+                            'button',
+                            {
+                              key: 'remove',
+                              type: 'button',
+                              onClick: () => removeListItem('cons', index),
+                              className:
+                                'text-xs text-rose-200 px-2 py-1 rounded-lg border border-transparent hover:border-rose-200',
+                            },
+                            '×'
+                          ),
+                        ]
+                      )
+                    ),
                   ]
                 ),
               ]
@@ -853,6 +1107,73 @@ function App() {
               : null,
           ]
         ),
+        e(
+          'div',
+          {
+            key: 'photos',
+            className:
+              'rounded-2xl border border-slate-800 bg-slate-900/70 p-4 space-y-3 shadow-lg shadow-slate-950/40',
+          },
+          [
+            e('div', { key: 'title', className: 'flex items-center justify-between' }, [
+              e('div', { key: 'text' }, [
+                e('p', { key: 'eyebrow', className: 'text-xs uppercase tracking-[0.2em] text-cyan-300' }, 'Assets'),
+                e('h2', { key: 'heading', className: 'text-lg font-semibold' }, 'Photo Gallery'),
+              ]),
+              e('span', { key: 'count', className: 'text-xs text-slate-400' }, `${standForm.photos.length} items`),
+            ]),
+            e(
+              'div',
+              { key: 'rail', className: 'flex items-center gap-3 overflow-x-auto pb-2' },
+              [
+                e(
+                  'button',
+                  {
+                    key: 'add-photo',
+                    type: 'button',
+                    onClick: addPhoto,
+                    className:
+                      'flex-none h-24 w-24 rounded-2xl border-2 border-dashed border-cyan-300/60 text-cyan-200 flex items-center justify-center text-sm font-semibold bg-slate-900/80 hover:bg-cyan-500/5',
+                  },
+                  '📷 Add'
+                ),
+                ...standForm.photos.map((photo) =>
+                  e(
+                    'div',
+                    {
+                      key: photo.id,
+                      className:
+                        'relative flex-none h-24 w-24 rounded-2xl border border-slate-700 bg-slate-800 overflow-hidden shadow-inner',
+                      style: { backgroundColor: `${photo.color}22`, borderColor: `${photo.color}55` },
+                    },
+                    [
+                      e(
+                        'div',
+                        {
+                          key: 'label',
+                          className:
+                            'absolute inset-0 flex items-center justify-center text-center px-2 text-[11px] font-semibold text-white drop-shadow',
+                        },
+                        photo.label
+                      ),
+                      e(
+                        'button',
+                        {
+                          key: 'remove',
+                          type: 'button',
+                          onClick: () => removePhoto(photo.id),
+                          className:
+                            'absolute top-1 right-1 h-6 w-6 rounded-full bg-slate-900/80 text-xs text-white border border-slate-700 hover:bg-rose-500 hover:border-rose-300',
+                        },
+                        '×'
+                      ),
+                    ]
+                  )
+                ),
+              ]
+            ),
+          ]
+        ),
       ]
     );
 
@@ -898,6 +1219,17 @@ function App() {
           ]
         ),
         e('div', { key: 'view' }, renderView()),
+        toast
+          ? e(
+              'div',
+              {
+                key: 'toast',
+                className:
+                  'fixed bottom-32 left-1/2 -translate-x-1/2 bg-emerald-600 text-white px-4 py-2 rounded-full shadow-lg border border-emerald-300/60 text-sm',
+              },
+              toast
+            )
+          : null,
         e(
           'button',
           {

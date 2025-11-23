@@ -20,9 +20,9 @@
 ## 4. Stand Editor (The Form) [ ]
 - [x] Basic Info (Company Name, Product Ref, Description).
 - [x] Contact Management (Accordion style, Add/Remove contacts).
-- [ ] "Generate with AI" Feature (Mock 2s loading -> Fill data).
-- [ ] Pros & Cons Section (Dynamic Add/Remove list items).
-- [ ] Photo Gallery (Horizontal scroll, Add button mockup).
+- [x] "Generate with AI" Feature (Mock 2s loading -> Fill data).
+- [x] Pros & Cons Section (Dynamic Add/Remove list items).
+- [x] Photo Gallery (Horizontal scroll, Add button mockup).
 - [ ] Tag Selection (Add/Remove chips).
 
 ## 5. Tag Management System [ ]
