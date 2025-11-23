@@ -316,22 +316,51 @@ const App = () => {
     };
   };
 
-  const handleGenerateAi = () => {
+  const handleGenerateAi = async () => {
     if (aiLoading) return;
     setAiLoading(true);
     setToast('');
-    setTimeout(() => {
+
+    try {
+      const response = await fetch('/api/chatgpt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          companyName: standForm.companyName,
+          productRef: standForm.productRef,
+          currentDescription: standForm.description,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('AI request failed');
+      }
+
+      const aiData = await response.json();
+
+      setStandForm((prev) => ({
+        ...prev,
+        description: aiData.description || prev.description,
+        pros: Array.isArray(aiData.pros) && aiData.pros.length ? aiData.pros : prev.pros,
+        cons: Array.isArray(aiData.cons) && aiData.cons.length ? aiData.cons : prev.cons,
+      }));
+
+      setToast('AI suggestions applied successfully.');
+    } catch (error) {
       const aiData = mockAiData(standForm.companyName || '');
+
       setStandForm((prev) => ({
         ...prev,
         description: aiData.description,
         pros: aiData.pros,
         cons: aiData.cons,
       }));
+
+      setToast('Using fallback AI suggestions. Add your OpenAI key for live results.');
+    } finally {
       setAiLoading(false);
-      setToast('AI suggestions applied successfully.');
       setTimeout(() => setToast(''), 2500);
-    }, 2000);
+    }
   };
 
   const handleAddTag = () => {
