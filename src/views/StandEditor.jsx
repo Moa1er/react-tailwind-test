@@ -123,7 +123,20 @@ const Contacts = ({ contacts, isOpen, onToggle, onAdd, onRemove, onUpdate }) => 
   );
 };
 
-const PhotoRail = ({ photos, onAddPhoto, onPhotoSelected, onRemovePhoto, fileInputRef, cameraInputRef }) => {
+const PhotoRail = ({
+  photos,
+  onAddPhoto,
+  onPhotoSelected,
+  onRemovePhoto,
+  fileInputRef,
+  cameraVideoRef,
+  cameraActive,
+  cameraError,
+  cameraLoading,
+  onStartCamera,
+  onStopCamera,
+  onCaptureFrame,
+}) => {
   return (
     <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4 space-y-3 shadow-lg shadow-slate-950/40">
       <div className="flex items-center justify-between">
@@ -134,60 +147,116 @@ const PhotoRail = ({ photos, onAddPhoto, onPhotoSelected, onRemovePhoto, fileInp
         <span className="text-xs text-slate-400">{photos.length} items</span>
       </div>
       <p className="text-xs text-slate-400">Capture directly from your camera or upload from your files. Previews appear immediately after selection.</p>
-      <div className="flex items-center gap-3 overflow-x-auto pb-2">
-        <input
-          ref={cameraInputRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          className="hidden"
-          onChange={onPhotoSelected}
-          multiple={false}
-        />
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={onPhotoSelected}
-          multiple
-        />
-        <button
-          type="button"
-          onClick={() => onAddPhoto('camera')}
-          className="flex-none h-24 w-24 rounded-2xl border-2 border-dashed border-cyan-300/60 text-cyan-200 flex items-center justify-center text-sm font-semibold bg-slate-900/80 hover:bg-cyan-500/5"
-        >
-          📷 Use Camera
-        </button>
-        <button
-          type="button"
-          onClick={() => onAddPhoto('file')}
-          className="flex-none h-24 w-24 rounded-2xl border-2 border-dashed border-slate-400/60 text-slate-100 flex items-center justify-center text-sm font-semibold bg-slate-900/80 hover:bg-slate-700/60"
-        >
-          📁 Upload Files
-        </button>
-        {photos.map((photo) => (
-          <div
-            key={photo.id}
-            className="relative flex-none h-24 w-24 rounded-2xl border border-slate-700 bg-slate-800 overflow-hidden shadow-inner"
-            style={{ backgroundColor: `${photo.color}22`, borderColor: `${photo.color}55` }}
-          >
-            {photo.preview ? (
-              <img src={photo.preview} alt={photo.label} className="h-full w-full object-cover" />
+      <div className="grid gap-3 md:grid-cols-2">
+        <div className="rounded-2xl border border-slate-800 bg-slate-950/50 p-3 space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.2em] text-cyan-300">Live Capture</p>
+              <h3 className="font-semibold text-white">Device Camera</h3>
+            </div>
+            {cameraActive ? (
+              <span className="text-xs px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
+                Live
+              </span>
             ) : (
-              <div className="flex h-full w-full items-center justify-center text-xs font-semibold text-slate-200">
-                {photo.label}
+              <span className="text-xs px-2 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700">Idle</span>
+            )}
+          </div>
+          <div className="relative overflow-hidden rounded-xl border border-slate-800 bg-black">
+            {cameraActive ? (
+              <video
+                ref={cameraVideoRef}
+                className="h-48 w-full object-cover"
+                autoPlay
+                playsInline
+                muted
+              />
+            ) : (
+              <div className="flex h-48 items-center justify-center text-sm text-slate-400">
+                Start the camera to preview and capture a still frame.
               </div>
             )}
+            {cameraError ? (
+              <div className="absolute inset-x-3 bottom-3 rounded-lg bg-red-900/70 border border-red-500/40 px-3 py-2 text-xs text-red-100">
+                {cameraError}
+              </div>
+            ) : null}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              onClick={() => onRemovePhoto(photo.id)}
-              className="absolute top-1 right-1 rounded-full bg-slate-900/80 border border-slate-700 px-2 text-[10px] text-slate-200"
+              onClick={onStartCamera}
+              disabled={cameraLoading}
+              className="rounded-lg bg-cyan-600 px-3 py-2 text-sm font-semibold text-white hover:bg-cyan-500 disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              ✕
+              {cameraLoading ? 'Requesting camera…' : 'Start Camera'}
+            </button>
+            <button
+              type="button"
+              onClick={onCaptureFrame}
+              disabled={!cameraActive}
+              className="rounded-lg border border-cyan-400/60 px-3 py-2 text-sm font-semibold text-cyan-100 hover:bg-cyan-500/10 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              Capture Photo
+            </button>
+            <button
+              type="button"
+              onClick={onStopCamera}
+              disabled={!cameraActive}
+              className="rounded-lg border border-slate-600 px-3 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-700/60 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              Stop Camera
             </button>
           </div>
-        ))}
+        </div>
+
+        <div className="rounded-2xl border border-slate-800 bg-slate-950/50 p-3 space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.2em] text-cyan-300">Uploads</p>
+              <h3 className="font-semibold text-white">File Import</h3>
+            </div>
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={onPhotoSelected}
+            multiple
+          />
+          <div className="flex items-center gap-3 overflow-x-auto pb-2">
+            <button
+              type="button"
+              onClick={() => onAddPhoto('file')}
+              className="flex-none h-24 w-24 rounded-2xl border-2 border-dashed border-slate-400/60 text-slate-100 flex items-center justify-center text-sm font-semibold bg-slate-900/80 hover:bg-slate-700/60"
+            >
+              📁 Upload Files
+            </button>
+            {photos.map((photo) => (
+              <div
+                key={photo.id}
+                className="relative flex-none h-24 w-24 rounded-2xl border border-slate-700 bg-slate-800 overflow-hidden shadow-inner"
+                style={{ backgroundColor: `${photo.color}22`, borderColor: `${photo.color}55` }}
+              >
+                {photo.preview ? (
+                  <img src={photo.preview} alt={photo.label} className="h-full w-full object-cover" />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-xs font-semibold text-slate-200">
+                    {photo.label}
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => onRemovePhoto(photo.id)}
+                  className="absolute top-1 right-1 rounded-full bg-slate-900/80 border border-slate-700 px-2 text-[10px] text-slate-200"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -210,7 +279,13 @@ const StandEditor = ({
   onPhotoSelected,
   onRemovePhoto,
   fileInputRef,
-  cameraInputRef,
+  cameraVideoRef,
+  cameraActive,
+  cameraError,
+  cameraLoading,
+  onStartCamera,
+  onStopCamera,
+  onCaptureFrame,
 }) => {
   return (
     <div className="space-y-5">
@@ -324,7 +399,13 @@ const StandEditor = ({
         onPhotoSelected={onPhotoSelected}
         onRemovePhoto={onRemovePhoto}
         fileInputRef={fileInputRef}
-        cameraInputRef={cameraInputRef}
+        cameraVideoRef={cameraVideoRef}
+        cameraActive={cameraActive}
+        cameraError={cameraError}
+        cameraLoading={cameraLoading}
+        onStartCamera={onStartCamera}
+        onStopCamera={onStopCamera}
+        onCaptureFrame={onCaptureFrame}
       />
 
       <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4 space-y-3 shadow-lg shadow-slate-950/40">

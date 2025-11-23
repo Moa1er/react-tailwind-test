@@ -106,7 +106,11 @@ const App = () => {
   const [aiLoading, setAiLoading] = useState(false);
   const [toast, setToast] = useState('');
   const fileInputRef = useRef(null);
-  const cameraInputRef = useRef(null);
+  const cameraVideoRef = useRef(null);
+  const [cameraStream, setCameraStream] = useState(null);
+  const [cameraActive, setCameraActive] = useState(false);
+  const [cameraError, setCameraError] = useState('');
+  const [cameraLoading, setCameraLoading] = useState(false);
 
   const getPaletteColor = () => {
     const palette = globalTags.map((tag) => tag.color);
@@ -245,8 +249,53 @@ const App = () => {
     });
   };
 
+  const stopCameraStream = () => {
+    setCameraStream((currentStream) => {
+      if (currentStream) {
+        currentStream.getTracks().forEach((track) => track.stop());
+      }
+      return null;
+    });
+    setCameraActive(false);
+  };
+
+  const startCamera = async () => {
+    if (cameraLoading) return;
+    if (cameraActive) {
+      stopCameraStream();
+    }
+    if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
+      setCameraError('Camera access is not supported on this device or browser.');
+      return;
+    }
+
+    setCameraError('');
+    setCameraLoading(true);
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' } },
+      });
+      setCameraStream(stream);
+      if (cameraVideoRef.current) {
+        cameraVideoRef.current.srcObject = stream;
+        await cameraVideoRef.current.play().catch(() => {});
+      }
+      setCameraActive(true);
+    } catch (error) {
+      setCameraError('Camera permission denied or unavailable. Please enable camera access and try again.');
+    } finally {
+      setCameraLoading(false);
+    }
+  };
+
   const handleAddPhoto = (mode = 'file') => {
-    const targetRef = mode === 'camera' ? cameraInputRef : fileInputRef;
+    if (mode === 'camera') {
+      startCamera();
+      return;
+    }
+
+    const targetRef = fileInputRef;
 
     if (targetRef?.current) {
       targetRef.current.click();
@@ -255,7 +304,36 @@ const App = () => {
     const id = `photo-${Date.now()}`;
     setStandForm((prev) => ({
       ...prev,
-      photos: [...prev.photos, { id, label: 'New Capture', color: getPaletteColor() }],
+      photos: [...prev.photos, { id, label: 'New Upload', color: getPaletteColor() }],
+    }));
+  };
+
+  const handleCaptureFrame = () => {
+    if (!cameraActive || !cameraVideoRef.current) return;
+
+    const video = cameraVideoRef.current;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth || 1280;
+    canvas.height = video.videoHeight || 720;
+    const context = canvas.getContext('2d');
+
+    if (!context) return;
+
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const preview = canvas.toDataURL('image/png');
+    const id = `photo-${Date.now()}`;
+
+    setStandForm((prev) => ({
+      ...prev,
+      photos: [
+        ...prev.photos,
+        {
+          id,
+          label: 'Camera Capture',
+          color: getPaletteColor(),
+          preview,
+        },
+      ],
     }));
   };
 
@@ -289,6 +367,13 @@ const App = () => {
   const removePhoto = (id) => {
     setStandForm((prev) => ({ ...prev, photos: prev.photos.filter((photo) => photo.id !== id) }));
   };
+
+  useEffect(() => {
+    return () => {
+      stopCameraStream();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const mockAiData = (name) => {
     const lower = name.toLowerCase();
@@ -422,7 +507,13 @@ const App = () => {
           onPhotoSelected={handlePhotoSelected}
           onRemovePhoto={removePhoto}
           fileInputRef={fileInputRef}
-          cameraInputRef={cameraInputRef}
+          cameraVideoRef={cameraVideoRef}
+          cameraActive={cameraActive}
+          cameraError={cameraError}
+          cameraLoading={cameraLoading}
+          onStartCamera={startCamera}
+          onStopCamera={stopCameraStream}
+          onCaptureFrame={handleCaptureFrame}
         />
       );
     }
