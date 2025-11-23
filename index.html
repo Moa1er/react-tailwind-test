@@ -2,26 +2,14 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#000000" />
-    <title>Camera PWA</title>
     <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              capture: '#ffffff',
-            },
-          },
-        },
-      };
-    </script>
+    <title>Stand Editor PWA</title>
   </head>
-    <body class="min-h-screen w-screen bg-black text-white overflow-y-auto">
-      <div id="root" class="min-h-screen"></div>
-      <script type="module" src="/app.js"></script>
-    </body>
-  </html>
+  <body class="min-h-screen bg-black text-white">
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
