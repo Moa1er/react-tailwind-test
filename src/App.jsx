@@ -553,7 +553,7 @@ const App = () => {
   };
 
   return (
-    <div className="min-h-screen w-full p-4 md:p-6 text-white">
+    <div className="min-h-screen w-full p-4 pb-24 text-white md:p-6 md:pb-6">
       <div className="mx-auto max-w-6xl space-y-6">
         <div className="flex flex-col gap-6 lg:flex-row">
           <Sidebar
