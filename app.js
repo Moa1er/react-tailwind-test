@@ -1,257 +1,428 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'https://esm.sh/react@18.3.1';
+import React, { useMemo, useState } from 'https://esm.sh/react@18.3.1';
 import { createRoot } from 'https://esm.sh/react-dom@18.3.1/client';
 
 const e = React.createElement;
 
-const SwitchCameraIcon = ({ className = '' }) =>
-  e(
-    'svg',
-    { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 24 24', fill: 'currentColor', className },
-    e('path', {
-      d: 'M12 6c1.03 0 2.02.24 2.9.7l1.45-1.45A7.963 7.963 0 0 0 12 4C8.69 4 5.86 6.05 4.95 9H2l3 3 3-3H5.06C5.86 7.19 8.09 6 12 6zm7 3h-2.05c-.8-1.81-3.03-3-6.95-3-.99 0-1.95.15-2.83.43l1.48 1.48C9.2 7.66 10.09 7.5 11 7.5c3.31 0 6 2.69 6 6 0 1.38-.47 2.65-1.26 3.65l1.46 1.46C18.83 17.04 19.5 15.59 19.5 14c0-2.21-1.79-4-4-4l1.86-1.86L18 9z',
-    })
-  );
+const views = [
+  { id: 'dashboard', label: 'Dashboard', icon: '🏠' },
+  { id: 'project', label: 'Project View', icon: '📂' },
+  { id: 'standEditor', label: 'Stand Editor', icon: '✏️' },
+  { id: 'tagManager', label: 'Tag Manager', icon: '🏷️' },
+  { id: 'export', label: 'Export', icon: '⬇️' },
+];
 
-const OverlayButton = ({ label, onClick, variant = 'light' }) => {
-  const base =
-    'px-4 py-2 rounded-full font-semibold text-sm shadow transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black';
-  const styles =
-    variant === 'light'
-      ? 'bg-white text-black hover:bg-gray-100 focus:ring-white'
-      : 'bg-gray-800 text-white hover:bg-gray-700 focus:ring-gray-200';
-  return e(
-    'button',
+const statusStyles = {
+  Active: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40',
+  Planning: 'bg-amber-500/15 text-amber-200 border-amber-500/40',
+  Archived: 'bg-slate-500/20 text-slate-200 border-slate-500/40',
+};
+
+const TagChip = ({ label, color }) =>
+  e(
+    'span',
     {
-      type: 'button',
-      onClick,
-      className: `${base} ${styles}`,
+      className: 'px-3 py-1 rounded-full text-xs font-medium border',
+      style: {
+        backgroundColor: `${color}22`,
+        color,
+        borderColor: `${color}44`,
+      },
     },
     label
   );
-};
 
-function App() {
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null);
-  const streamRef = useRef(null);
-  const [facingMode, setFacingMode] = useState('environment');
-  const [capturedImage, setCapturedImage] = useState(null);
-  const [error, setError] = useState('');
-  const [isReady, setIsReady] = useState(false);
-  const [permissionGranted, setPermissionGranted] = useState(false);
-  const [isRequesting, setIsRequesting] = useState(false);
-
-  const videoConstraints = useMemo(
-    () => ({ facingMode, width: { ideal: 1920 }, height: { ideal: 1080 } }),
-    [facingMode]
-  );
-
-  const stopStream = useCallback(() => {
-    const current = streamRef.current;
-    if (current) {
-      current.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-    }
-  }, []);
-
-  const startStream = useCallback(async () => {
-    if (!navigator.mediaDevices?.getUserMedia) {
-      setError('Camera access is not supported in this browser.');
-      return;
-    }
-
-    setIsRequesting(true);
-    setError('');
-
-    try {
-      stopStream();
-      const stream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints });
-      streamRef.current = stream;
-
-      const video = videoRef.current;
-      if (video) {
-        video.srcObject = stream;
-        await video.play();
-      }
-
-      setPermissionGranted(true);
-      setIsReady(true);
-    } catch (err) {
-      console.error('Camera permission error', err);
-      setPermissionGranted(false);
-      setIsReady(false);
-      setError('Camera permission is required. Please allow access and try again.');
-    } finally {
-      setIsRequesting(false);
-    }
-  }, [stopStream, videoConstraints]);
-
-  const requestCameraAccess = useCallback(async () => {
-    await startStream();
-  }, [startStream]);
-
-  const capture = useCallback(() => {
-    const video = videoRef.current;
-    if (!video || !video.videoWidth || !video.videoHeight) return;
-
-    const canvas = canvasRef.current ?? (canvasRef.current = document.createElement('canvas'));
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const shot = canvas.toDataURL('image/png');
-    setCapturedImage(shot);
-    video.pause();
-  }, []);
-
-  const retake = useCallback(() => {
-    setCapturedImage(null);
-    const video = videoRef.current;
-    if (video) {
-      video.play().catch(() => {});
-    } else if (permissionGranted) {
-      startStream();
-    }
-  }, [permissionGranted, startStream]);
-
-  const saveImage = useCallback(() => {
-    if (!capturedImage) return;
-    const link = document.createElement('a');
-    link.href = capturedImage;
-    link.download = `camera-shot-${Date.now()}.png`;
-    link.click();
-  }, [capturedImage]);
-
-  const toggleCamera = useCallback(() => {
-    setFacingMode((mode) => (mode === 'user' ? 'environment' : 'user'));
-    setIsReady(false);
-  }, []);
-
-  useEffect(() => {
-    if (!capturedImage && videoRef.current?.paused && streamRef.current) {
-      videoRef.current.play().catch(() => {});
-    }
-  }, [capturedImage]);
-
-  useEffect(() => {
-    if (permissionGranted && !capturedImage) {
-      startStream();
-    }
-  }, [permissionGranted, capturedImage, startStream]);
-
-  useEffect(() => () => stopStream(), [stopStream]);
-
-  return e(
+const CardActions = ({ onSetActive, onEdit, onArchive }) =>
+  e(
     'div',
-    { className: 'relative h-full w-full bg-black text-white overflow-hidden select-none' },
+    { className: 'flex items-center gap-2 text-xs text-slate-200' },
     [
-      e(
-        'div',
-        { key: 'viewer', className: 'relative h-full w-full' },
-        capturedImage
-          ? e('img', {
-              src: capturedImage,
-              alt: 'Captured photograph',
-              className: 'absolute inset-0 w-full h-full object-cover',
-            })
-          : e('video', {
-              ref: videoRef,
-              muted: true,
-              autoPlay: true,
-              playsInline: true,
-              className: 'absolute inset-0 w-full h-full object-cover bg-black',
-            })
-      ),
-      (!isReady || !permissionGranted) && !capturedImage
-        ? e(
-            'div',
-            {
-              key: 'loading',
-              className:
-                'absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-black via-black/80 to-black/40 text-center px-6 space-y-4',
-            },
-            [
-              e('div', { className: 'text-lg font-semibold' }, 'Enable your camera to get started'),
-              e(
-                'p',
-                { className: 'text-sm text-gray-200 max-w-xs' },
-                'Tap the button below and accept the permission prompt. If the preview stays black, try switching cameras or refreshing after granting access.',
-              ),
-              e(
-                'button',
-                {
-                  type: 'button',
-                  onClick: requestCameraAccess,
-                  disabled: isRequesting,
-                  className:
-                    'px-5 py-2 rounded-full bg-white text-black font-semibold shadow disabled:opacity-70 disabled:cursor-not-allowed',
-                },
-                isRequesting ? 'Requesting…' : 'Enable camera'
-              ),
-            ]
-          )
-        : null,
-      error
-        ? e(
-            'div',
-            {
-              key: 'error',
-              className:
-                'absolute top-4 left-1/2 -translate-x-1/2 bg-red-600 text-white px-4 py-2 rounded-full shadow text-sm',
-            },
-            error
-          )
-        : null,
       e(
         'button',
         {
-          key: 'switch',
-          type: 'button',
-          onClick: toggleCamera,
+          key: 'set',
           className:
-            'absolute top-4 right-4 bg-white/10 backdrop-blur rounded-full p-2 border border-white/20 text-white hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/50',
-          'aria-label': 'Switch camera',
+            'px-3 py-1 rounded-full bg-slate-800/80 border border-slate-700 hover:bg-slate-700 transition',
+          type: 'button',
+          onClick: onSetActive,
         },
-        e(SwitchCameraIcon, { className: 'w-6 h-6' })
+        'Set Active'
       ),
-      capturedImage
-        ? e(
+      e(
+        'button',
+        {
+          key: 'edit',
+          className:
+            'px-3 py-1 rounded-full bg-slate-800/80 border border-slate-700 hover:bg-slate-700 transition',
+          type: 'button',
+          onClick: onEdit,
+        },
+        'Edit'
+      ),
+      e(
+        'button',
+        {
+          key: 'archive',
+          className:
+            'px-3 py-1 rounded-full bg-slate-800/80 border border-slate-700 hover:bg-slate-700 transition',
+          type: 'button',
+          onClick: onArchive,
+        },
+        'Archive'
+      ),
+    ]
+  );
+
+function App() {
+  const [activeView, setActiveView] = useState('dashboard');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedProjectId, setSelectedProjectId] = useState('expo-1');
+  const [globalTags] = useState([
+    { id: 't1', label: 'Sustainability', color: '#22d3ee' },
+    { id: 't2', label: 'Innovation', color: '#a855f7' },
+    { id: 't3', label: 'VR/AR', color: '#f97316' },
+    { id: 't4', label: 'Hospitality', color: '#34d399' },
+    { id: 't5', label: 'Retail', color: '#facc15' },
+  ]);
+  const [projects, setProjects] = useState([
+    {
+      id: 'expo-1',
+      name: 'Future Mobility Expo',
+      location: 'Berlin, Germany',
+      dates: 'May 12 - 15, 2024',
+      status: 'Active',
+      tags: ['Sustainability', 'Innovation'],
+      stands: [
+        { id: 's1', company: 'AeroDynamics', tags: ['VR/AR'] },
+        { id: 's2', company: 'VoltRide', tags: ['Innovation'] },
+      ],
+    },
+    {
+      id: 'expo-2',
+      name: 'Luxury Hospitality Summit',
+      location: 'Dubai, UAE',
+      dates: 'June 02 - 05, 2024',
+      status: 'Planning',
+      tags: ['Hospitality', 'Retail'],
+      stands: [
+        { id: 's3', company: 'Oasis Living', tags: ['Hospitality'] },
+        { id: 's4', company: 'Skyline Interiors', tags: ['Retail'] },
+      ],
+    },
+    {
+      id: 'expo-3',
+      name: 'Immersive Tech Fair',
+      location: 'Austin, USA',
+      dates: 'July 18 - 20, 2024',
+      status: 'Archived',
+      tags: ['VR/AR', 'Innovation'],
+      stands: [
+        { id: 's5', company: 'VisionGrid', tags: ['VR/AR'] },
+        { id: 's6', company: 'HoloBay', tags: ['Innovation'] },
+      ],
+    },
+  ]);
+
+  const handleSetActive = (projectId) => {
+    setProjects((prev) =>
+      prev.map((project) =>
+        project.id === projectId
+          ? { ...project, status: 'Active' }
+          : project.status === 'Active'
+            ? { ...project, status: 'Planning' }
+            : project
+      )
+    );
+    setSelectedProjectId(projectId);
+  };
+
+  const handleArchive = (projectId) => {
+    setProjects((prev) =>
+      prev.map((project) => (project.id === projectId ? { ...project, status: 'Archived' } : project))
+    );
+    setSelectedProjectId(projectId);
+  };
+
+  const handleEdit = (projectId) => {
+    setSelectedProjectId(projectId);
+    setActiveView('standEditor');
+  };
+
+  const handleNewProject = () => {
+    const now = new Date();
+    const newId = `project-${now.getTime()}`;
+    const today = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const defaultTags = globalTags.slice(0, 2).map((tag) => tag.label);
+
+    const newProject = {
+      id: newId,
+      name: 'Untitled Project',
+      location: 'Set location',
+      dates: today,
+      status: 'Planning',
+      tags: defaultTags,
+      stands: [],
+    };
+
+    setProjects((prev) => [newProject, ...prev]);
+    setSelectedProjectId(newId);
+    setActiveView('project');
+  };
+
+  const filteredProjects = useMemo(() => {
+    const value = searchTerm.trim().toLowerCase();
+    if (!value) return projects;
+    return projects.filter(
+      (project) =>
+        project.name.toLowerCase().includes(value) ||
+        project.location.toLowerCase().includes(value) ||
+        project.tags.some((tag) => tag.toLowerCase().includes(value))
+    );
+  }, [projects, searchTerm]);
+
+  const selectedProject = useMemo(
+    () => projects.find((project) => project.id === selectedProjectId) ?? projects[0],
+    [projects, selectedProjectId]
+  );
+
+  const renderDashboard = () =>
+    e(
+      'div',
+      { className: 'space-y-5' },
+      e(
+        'div',
+        { className: 'bg-slate-900/70 backdrop-blur rounded-2xl border border-slate-800 shadow-lg' },
+        [
+          e(
             'div',
-            {
-              key: 'overlay',
-              className: 'absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex flex-col justify-end p-6 space-y-3',
-            },
+            { key: 'search', className: 'p-4 border-b border-slate-800' },
+            [
+              e(
+                'label',
+                { className: 'text-sm text-slate-300 font-medium', htmlFor: 'project-search' },
+                'Search projects'
+              ),
+              e(
+                'div',
+                {
+                  className:
+                    'mt-2 flex items-center gap-2 bg-slate-800/70 rounded-xl px-3 py-2 border border-slate-700 focus-within:border-cyan-400/60',
+                },
+                [
+                  e('span', { key: 'icon', className: 'text-slate-400 text-sm' }, '🔍'),
+                  e('input', {
+                    key: 'input',
+                    id: 'project-search',
+                    className: 'w-full bg-transparent outline-none text-sm placeholder:text-slate-500',
+                    placeholder: 'Name, location, or tag',
+                    value: searchTerm,
+                    onChange: (event) => setSearchTerm(event.target.value),
+                  }),
+                ]
+              ),
+            ]
+          ),
+          e(
+            'div',
+            { key: 'cards', className: 'p-4 space-y-3' },
+            filteredProjects.length
+              ? filteredProjects.map((project) =>
+                  e(
+                    'article',
+                    {
+                      key: project.id,
+                      className: `bg-gradient-to-br from-slate-900 to-slate-800 rounded-xl border p-4 shadow-lg space-y-3 transition hover:border-cyan-400/50 ${
+                        project.id === selectedProjectId
+                          ? 'border-cyan-400/70 shadow-cyan-500/20'
+                          : 'border-slate-700/60'
+                      }`,
+                      onClick: () => setSelectedProjectId(project.id),
+                    },
+                    [
+                      e(
+                        'div',
+                        { key: 'head', className: 'flex items-start justify-between gap-3' },
+                        [
+                          e(
+                            'div',
+                            { key: 'title', className: 'space-y-1' },
+                            [
+                              e('h3', { key: 'name', className: 'text-lg font-semibold text-white' }, project.name),
+                              e('p', { key: 'loc', className: 'text-sm text-slate-300' }, project.location),
+                              e('p', { key: 'date', className: 'text-xs text-slate-500' }, project.dates),
+                            ]
+                          ),
+                          e(
+                            'span',
+                            {
+                              key: 'status',
+                              className: `px-3 py-1 rounded-full text-xs font-semibold border ${
+                                statusStyles[project.status] ?? 'bg-slate-700 text-slate-200 border-slate-600'
+                              }`,
+                            },
+                            project.status
+                          ),
+                        ]
+                      ),
+                      e(
+                        'div',
+                        { key: 'tags', className: 'flex flex-wrap gap-2' },
+                        project.tags.map((tag) => {
+                          const tagColor = globalTags.find((item) => item.label === tag)?.color ?? '#94a3b8';
+                          return e(TagChip, { key: tag, label: tag, color: tagColor });
+                        })
+                      ),
+                      e(
+                        'div',
+                        { key: 'meta', className: 'flex items-center justify-between text-xs text-slate-400' },
+                        [
+                          e(
+                            'span',
+                            { key: 'stands', className: 'flex items-center gap-2' },
+                            [
+                              e('span', { key: 'dot1', className: 'h-2 w-2 rounded-full bg-cyan-400' }),
+                              `${project.stands.length} stands`,
+                            ]
+                          ),
+                          e(
+                            'span',
+                            { key: 'tags-count', className: 'flex items-center gap-2' },
+                            [
+                              e('span', { key: 'dot2', className: 'h-2 w-2 rounded-full bg-fuchsia-400' }),
+                              `Tags: ${project.tags.length}`,
+                            ]
+                          ),
+                        ]
+                      ),
+                      e(CardActions, {
+                        key: 'actions',
+                        onSetActive: () => handleSetActive(project.id),
+                        onEdit: () => handleEdit(project.id),
+                        onArchive: () => handleArchive(project.id),
+                      }),
+                    ]
+                  )
+                )
+              : e(
+                  'div',
+                  { className: 'text-sm text-center text-slate-400 py-6' },
+                  'No projects match that search.'
+                )
+          ),
+        ]
+      ),
+      e(
+        'div',
+        { className: 'grid grid-cols-2 gap-2 text-xs text-slate-400' },
+        [
+          e('div', { key: 'ui', className: 'p-3 rounded-xl border border-slate-800 bg-slate-900/80' }, 'Swipe-ready UI'),
+          e(
+            'div',
+            { key: 'touch', className: 'p-3 rounded-xl border border-slate-800 bg-slate-900/80' },
+            'Touch-friendly spacing'
+          ),
+        ]
+      )
+    );
+
+  const renderPlaceholder = (label) =>
+    e(
+      'div',
+      { className: 'rounded-2xl border border-slate-800 bg-slate-900/70 p-6 text-center text-slate-300 space-y-2' },
+      [
+        e('p', { key: 'title', className: 'font-semibold text-white' }, label),
+        e('p', { key: 'subtitle', className: 'text-sm text-slate-400' }, 'Build steps coming soon.'),
+        selectedProject
+          ? e(
+              'p',
+              { key: 'selected', className: 'text-xs text-slate-500' },
+              `Selected project: ${selectedProject.name}`
+            )
+          : null,
+      ]
+    );
+
+  const renderView = () => {
+    switch (activeView) {
+      case 'dashboard':
+        return renderDashboard();
+      case 'project':
+        return renderPlaceholder('Project Detail View');
+      case 'standEditor':
+        return renderPlaceholder('Stand Editor');
+      case 'tagManager':
+        return renderPlaceholder('Tag Management');
+      case 'export':
+        return renderPlaceholder('Export Module');
+      default:
+        return null;
+    }
+  };
+
+  return e(
+    'div',
+    { className: 'min-h-screen bg-slate-950 text-white flex justify-center' },
+    e(
+      'div',
+      { className: 'w-full max-w-md px-4 pb-32 pt-8 space-y-6' },
+      [
+        e(
+          'header',
+          { key: 'header', className: 'space-y-1' },
+          [
             e(
-              'div',
-              { className: 'flex justify-center space-x-3' },
+              'p',
+              { key: 'eyebrow', className: 'text-xs uppercase tracking-[0.3em] text-cyan-300' },
+              'Exhibition Toolkit'
+            ),
+            e('h1', { key: 'title', className: 'text-2xl font-bold' }, 'Stand Management'),
+            e(
+              'p',
+              { key: 'sub', className: 'text-sm text-slate-400' },
+              'Mobile-first hub for projects, stands, and tags.'
+            ),
+          ]
+        ),
+        e('div', { key: 'view' }, renderView()),
+        e(
+          'button',
+          {
+            key: 'fab',
+            type: 'button',
+            className:
+              'fixed bottom-20 right-6 bg-cyan-500 text-slate-950 font-semibold px-5 py-3 rounded-full shadow-xl shadow-cyan-500/40 border border-cyan-300 hover:scale-[1.02] active:scale-95 transition',
+            onClick: handleNewProject,
+          },
+          '+ New Project'
+        ),
+        e(
+          'nav',
+          {
+            key: 'bottom-nav',
+            className:
+              'fixed bottom-0 left-0 right-0 bg-slate-950/95 border-t border-slate-800 backdrop-blur px-4 py-3 flex justify-between max-w-md mx-auto',
+          },
+          views.map((view) =>
+            e(
+              'button',
+              {
+                key: view.id,
+                type: 'button',
+                onClick: () => setActiveView(view.id),
+                className: `flex-1 flex flex-col items-center gap-1 text-xs font-medium py-2 rounded-xl transition ${
+                  activeView === view.id
+                    ? 'text-cyan-300 bg-slate-900 border border-cyan-400/40'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`,
+              },
               [
-                e(OverlayButton, { key: 'retake', label: 'Retake', onClick: retake, variant: 'dark' }),
-                e(OverlayButton, { key: 'save', label: 'Save', onClick: saveImage }),
+                e('span', { key: 'icon', className: 'text-lg' }, view.icon),
+                e('span', { key: 'label' }, view.label.split(' ')[0]),
               ]
             )
           )
-        : e(
-            'div',
-            { key: 'capture', className: 'absolute inset-0 pointer-events-none flex items-end justify-center pb-8' },
-            e(
-              'div',
-              {
-                className:
-                  'w-24 h-24 rounded-full bg-white border-4 border-gray-200 shadow-lg scale-100 active:scale-95 transition transform pointer-events-auto flex items-center justify-center',
-              },
-              e('button', {
-                type: 'button',
-                onClick: capture,
-                disabled: !isReady || !permissionGranted,
-                className:
-                  'w-16 h-16 rounded-full bg-white shadow-inner border border-gray-300 hover:scale-105 active:scale-95 transition focus:outline-none disabled:opacity-70 disabled:cursor-not-allowed',
-                'aria-label': 'Capture photo',
-              })
-            )
-          ),
-    ]
+        ),
+      ]
+    )
   );
 }
 
