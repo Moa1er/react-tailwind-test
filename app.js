@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'https://esm.sh/react@18.3.1';
+import React, { useEffect, useMemo, useRef, useState } from 'https://esm.sh/react@18.3.1';
 import { createRoot } from 'https://esm.sh/react-dom@18.3.1/client';
 
 const e = React.createElement;
@@ -156,6 +156,12 @@ function App() {
   const [contactsOpen, setContactsOpen] = useState(true);
   const [aiLoading, setAiLoading] = useState(false);
   const [toast, setToast] = useState('');
+  const photoInputRef = useRef(null);
+
+  const getPaletteColor = () => {
+    const palette = ['#22d3ee', '#a855f7', '#f97316', '#34d399', '#facc15'];
+    return palette[Math.floor(Math.random() * palette.length)];
+  };
 
   const handleSetActive = (projectId) => {
     setProjects((prev) =>
@@ -298,14 +304,48 @@ function App() {
     });
   };
 
-  const addPhoto = () => {
-    const palette = ['#22d3ee', '#a855f7', '#f97316', '#34d399', '#facc15'];
-    const color = palette[Math.floor(Math.random() * palette.length)];
+  const addPhotoPlaceholder = () => {
     const id = `photo-${Date.now()}`;
+    const color = getPaletteColor();
     setStandForm((prev) => ({
       ...prev,
       photos: [...prev.photos, { id, label: 'New Capture', color }],
     }));
+  };
+
+  const handleAddPhoto = () => {
+    if (photoInputRef.current) {
+      photoInputRef.current.click();
+      return;
+    }
+    addPhotoPlaceholder();
+  };
+
+  const handlePhotoSelected = (event) => {
+    const files = Array.from(event.target.files || []);
+    if (!files.length) return;
+
+    files.forEach((file, index) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const id = `photo-${Date.now()}-${index}`;
+        setStandForm((prev) => ({
+          ...prev,
+          photos: [
+            ...prev.photos,
+            {
+              id,
+              label: file.name || 'New Capture',
+              color: getPaletteColor(),
+              preview: typeof reader.result === 'string' ? reader.result : undefined,
+            },
+          ],
+        }));
+      };
+      reader.readAsDataURL(file);
+    });
+
+    event.target.value = '';
   };
 
   const removePhoto = (id) => {
@@ -1126,16 +1166,25 @@ function App() {
               'div',
               { key: 'rail', className: 'flex items-center gap-3 overflow-x-auto pb-2' },
               [
+                e('input', {
+                  key: 'photo-input',
+                  type: 'file',
+                  accept: 'image/*',
+                  capture: 'environment',
+                  className: 'hidden',
+                  ref: photoInputRef,
+                  onChange: handlePhotoSelected,
+                }),
                 e(
                   'button',
                   {
                     key: 'add-photo',
                     type: 'button',
-                    onClick: addPhoto,
+                    onClick: handleAddPhoto,
                     className:
                       'flex-none h-24 w-24 rounded-2xl border-2 border-dashed border-cyan-300/60 text-cyan-200 flex items-center justify-center text-sm font-semibold bg-slate-900/80 hover:bg-cyan-500/5',
                   },
-                  '📷 Add'
+                  '📷 Camera / Files'
                 ),
                 ...standForm.photos.map((photo) =>
                   e(
@@ -1147,12 +1196,20 @@ function App() {
                       style: { backgroundColor: `${photo.color}22`, borderColor: `${photo.color}55` },
                     },
                     [
+                      photo.preview
+                        ? e('img', {
+                            key: 'img',
+                            src: photo.preview,
+                            alt: photo.label,
+                            className: 'absolute inset-0 h-full w-full object-cover',
+                          })
+                        : null,
                       e(
                         'div',
                         {
                           key: 'label',
                           className:
-                            'absolute inset-0 flex items-center justify-center text-center px-2 text-[11px] font-semibold text-white drop-shadow',
+                            'absolute inset-0 flex items-center justify-center text-center px-2 text-[11px] font-semibold text-white drop-shadow bg-slate-900/40 backdrop-blur-[1px] break-words leading-tight',
                         },
                         photo.label
                       ),

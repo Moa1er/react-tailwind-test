@@ -22,7 +22,7 @@
 - [x] Contact Management (Accordion style, Add/Remove contacts).
 - [x] "Generate with AI" Feature (Mock 2s loading -> Fill data).
 - [x] Pros & Cons Section (Dynamic Add/Remove list items).
-- [x] Photo Gallery (Horizontal scroll, Add button mockup).
+- [x] Photo Gallery (Horizontal scroll, camera/files capture add button with previews).
 - [ ] Tag Selection (Add/Remove chips).
 
 ## 5. Tag Management System [ ]
